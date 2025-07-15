@@ -13,6 +13,7 @@ class DataParser:
             return driver.page_source
         except Exception as e:
             print(f'Ошибка загрузки страницы {url}: {e}')
+            return None
 
     def parse(self, html, url):
         try:
@@ -20,11 +21,15 @@ class DataParser:
                 return None
 
             extractor = DataExtractor(html)
-            data = extractor.get_score() or {}
 
-            if data:
-                print('Успешно обработана')
-            return data
+            matches_data = []
+            for match_element in extractor.soup.select('.result-con')[:100]:
+                match_data = extractor.get_score(match_element)
+
+                if match_data:
+                    matches_data.append(match_data)
+            return matches_data if matches_data else None
+
         except Exception as e:
             print(f'Ошибка парсинга {url}: {e}')
             return None

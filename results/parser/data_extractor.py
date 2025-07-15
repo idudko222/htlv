@@ -7,9 +7,9 @@ class DataExtractor:
     def __init__(self, html):
         self.soup = BeautifulSoup(html, 'html.parser')
 
-    def get_score(self):
+    def get_score(self, match_element=None):
         try:
-            score_element = self.soup.find('div', class_='result-con')
+            score_element = match_element or self.soup.find('div', class_='result-con')
 
             if not score_element:
                 return None
