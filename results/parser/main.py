@@ -52,5 +52,17 @@ def parse_match_results():
         driver.quit()
 
 
+def parse_extended_data():
+    """Сбор особых данных матча"""
+    selenium_driver = SeleniumDriver()
+    driver = selenium_driver.driver
+    try:
+        data_parser = DataParser()
+
+        for
+
+    except Exception as e:
+        print(f'Ошибка в парсинге: {e}')
+
 if __name__ == '__main__':
     parse_match_results()

@@ -33,3 +33,15 @@ class DataParser:
         except Exception as e:
             print(f'Ошибка парсинга {url}: {e}')
             return None
+
+    def parse_big_data(self, html, url):
+        try:
+            if not html:
+                return None
+
+            extractor = DataExtractor(html)
+
+            matches_data = []
+            for
+
+
