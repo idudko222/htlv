@@ -24,7 +24,6 @@ class MapData:
 @dataclass
 class PlayerStats:
     nickname: str
-    full_name: Optional[str]
     country: str
     kills: int
     deaths: int
@@ -39,3 +38,7 @@ class MatchDetails:
     match_link: int
     maps: List[MapData]
     players_stats: List[PlayerStats]
+
+@dataclass
+class Team:
+    hltv_id: int

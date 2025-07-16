@@ -20,7 +20,7 @@ class Team(models.Model):
 
 class Player(models.Model):
     nickname = models.CharField(max_length=50)
-    full_name = models.CharField(max_length=50)
+    #full_name = models.CharField(max_length=50)
     country = models.CharField(max_length=50)
     # hltv_id = models.IntegerField(null=True, blank=True)
 

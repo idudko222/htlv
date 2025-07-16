@@ -2,6 +2,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from results.parser.data_extractor import DataExtractor, MatchScore
 from selenium.webdriver.common.by import By
 from typing import Optional, List
+from data_class import MatchDetails
 
 
 class DataParser:
@@ -35,14 +36,14 @@ class DataParser:
             print(f'Ошибка парсинга {url}: {e}')
             return None
 
-    def parse_big_data(self, html: str, url: str) -> Optional[dict]:
+    def parse_match_details(self, driver, match_url: str) -> Optional[MatchDetails]:
         try:
+            html = self.get_html(driver, match_url)
             if not html:
                 return None
 
             extractor = DataExtractor(html)
             return extractor.get_match_details()
-
         except Exception as e:
-            print(f'Ошибка парсинга деталей {url}: {e}')
+            print(f'Ошибка парсинга детальной страницы {match_url}: {e}')
             return None

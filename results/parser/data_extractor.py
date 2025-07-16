@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 import re
 from datetime import datetime
-from data_class import MatchScore, PlayerStats, MatchDetails, MapData
+from data_class import MatchScore, PlayerStats, MatchDetails, MapData, Team
 from typing import Optional, List, Dict, Tuple
 
 
@@ -107,12 +107,13 @@ class MatchDetailsParser:
         maps_data = self._parse_maps()
         players_stats = self._parse_players()
         match_link = self._parse_match_link()
+        team_id = self._parse_team_id()
 
         return MatchDetails(
             match_link=match_link,
             maps=maps_data,
             players_stats=players_stats
-        )
+        ) and Team(team_id=team_id)
 
     def _parse_maps(self) -> List[MapData]:
         maps_data = []
@@ -120,6 +121,7 @@ class MatchDetailsParser:
             for map_elem in self.soup.select('.mapholder'):
                 map_name = map_elem.select_one('.mapname').text.strip()
                 score_team1, score_team2, winner = self._parse_map_scores(map_elem)
+                print([score_team1, score_team2, winner, map_name])
 
                 if all([score_team1, score_team2, winner, map_name]):
                     maps_data.append(
@@ -139,32 +141,52 @@ class MatchDetailsParser:
         score_team2 = None
         winner = None
 
-        for score_elem in map_elem.select('.score'):
-            for team_score in score_elem.select('.won'):
-                score_team1 = team_score.select_one('.results-team-score').text.strip()
-                winner = team_score.select_one('.results-teamname').text.strip()
-            if score_team1 and winner:
-                for team_score in score_elem.select('.lost'):
-                    score_team2 = team_score.select_one('.results-team-score').text.strip()
+        # Ищем левую команду
+        left_team = map_elem.select_one('.results-left')
+        # Ищем правую команду
+        right_team = map_elem.select_one('.results-right')
+
+        # Проверяем, какая команда победила
+        if left_team and 'won' in left_team.get('class', []):
+            winner = left_team.select_one('.results-teamname').text.strip()
+            score_team1 = left_team.select_one('.results-team-score').text.strip()
+            score_team2 = right_team.select_one('.results-team-score').text.strip()
+        elif right_team and 'won' in right_team.get('class', []):
+            winner = right_team.select_one('.results-teamname').text.strip()
+            score_team1 = right_team.select_one('.results-team-score').text.strip()
+            score_team2 = left_team.select_one('.results-team-score').text.strip()
+
+        # Пропускаем несыгранные карты (где счёт "-")
+        if score_team1 == '-' or score_team2 == '-':
+            return None, None, None
+
         return score_team1, score_team2, winner
 
     def _parse_players(self) -> List[PlayerStats]:
         players_stats = []
-        for row in self.soup.select('.totalstats tr:not(.header-row)'):
+
+        # Находим ТОЛЬКО блок с общей статистикой (All maps)
+        all_maps_content = self.soup.select_one('#all-content')
+        if not all_maps_content:
+            raise ValueError("Could not find 'All maps' stats section")
+
+        for row in all_maps_content.select('.totalstats:not(.hidden) tr:not(.header-row)'):
             try:
                 player = self._parse_player_row(row)
-                players_stats.append(player)
+                if player:
+                    players_stats.append(player)
             except Exception as e:
                 print(f"Player parsing error: {e}")
                 continue
+
         return players_stats
 
     def _parse_player_row(self, row) -> PlayerStats:
-        nickname = row.select_one('.player-nick').text.strip()
-        full_name_elem = row.select_one('.gtSmartphone-only .statsPlayerName') or \
-                         row.select_one('.smartphone-only .statsPlayerName')
-        full_name = full_name_elem.text.strip() if full_name_elem else None
+        if 'hidden' in row.get('class', []):
+            return None
+
         country = row.find('img', class_='flag')['title'].strip()
+        nickname = row.select_one('.player-nick').text.strip()
 
         kd = row.select_one('.kd').text.strip()
         kills, deaths = map(int, kd.split('-'))
@@ -174,12 +196,12 @@ class MatchDetailsParser:
         rating = float(row.select_one('.rating').text.strip())
         team = self.soup.select_one('.teamName.team').text.strip()
 
-        player_link = row.select_one('.player-nick').find_parent('a')['href']
-        hltv_id = int(re.search(r'/player/(\d+)/', player_link).group(1))
+        player_link = row.select_one('td.players a[href^="/player/"]')['href']
+        hltv_id = re.search(r'/player/(\d+)/', player_link)
+        print([nickname, country, kd, adr, kast, rating, team, player_link])
 
         return PlayerStats(
             nickname=nickname,
-            full_name=full_name,
             country=country,
             kills=kills,
             deaths=deaths,
@@ -190,9 +212,19 @@ class MatchDetailsParser:
             hltv_id=hltv_id
         )
 
-    def _parse_match_link(self) -> int:
+    def _parse_match_link(self) -> Optional[int]:
         match_link = self.soup.find('link', {'rel': 'canonical'})['href']
-        return int(re.search(r'match/(\d+)', match_link).group(1))
+        match_id_match = re.search(r'/matches/(\d+)/', match_link)
+        if match_id_match:
+            return int(match_id_match.group(1))
+        return None
+
+    def _parse_team_id(self) -> Optional[int]:
+        team_link = self.soup.select_one('.team a[href^="/team/"]')['href']
+        team_id = team_link.split('/')[2]
+        if team_id:
+            return int(team_id)
+        return None
 
 
 class DataExtractor:
