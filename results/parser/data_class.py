@@ -9,6 +9,10 @@ class MatchScore:
     score_lost: str
     date: Optional[str]
     time: Optional[str]
+    match_format: Optional[int] = None
+    match_id: Optional[int] = None
+    match_url: Optional[str] = None
+    event_name: Optional[str] = None
 
 @dataclass
 class MapData:

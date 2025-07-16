@@ -18,7 +18,7 @@ def parse_match_results():
     driver = selenium_driver.driver
     try:
         data_parser = DataParser()
-        max_matches = 50000  # Максимальное количество матчей для парсинга
+        max_matches = 100  # Максимальное количество матчей для парсинга
         matches_per_page = 100  # Количество матчей на странице
 
         for page in range(0, max_matches, matches_per_page):
@@ -37,6 +37,9 @@ def parse_match_results():
                                 score_won=match_data.score_won,
                                 date=match_data.date,
                                 time=match_data.time,
+                                match_format=match_data.match_format,
+                                hltv_id=match_data.match_id,
+                                event=match_data.event_name,
                             )
                             print(
                                 f"Сохранен матч: {match_data.team_won} {match_data.score_won}:"
