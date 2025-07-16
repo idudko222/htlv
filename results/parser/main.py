@@ -31,16 +31,16 @@ def parse_match_results():
                     for match_data in parsed_data:
                         try:
                             Match.objects.create(
-                                team_won=match_data['team_won'],
-                                team_lost=match_data['team_lost'],
-                                score_lost=match_data['score_lost'],
-                                score_won=match_data['score_won'],
-                                date=match_data['date'],
-                                time=match_data['time'],
+                                team_won=match_data.team_won,
+                                team_lost=match_data.team_lost,
+                                score_lost=match_data.score_lost,
+                                score_won=match_data.score_won,
+                                date=match_data.date,
+                                time=match_data.time,
                             )
                             print(
-                                f"Сохранен матч: {match_data['team_won']} {match_data['score_won']}:"
-                                f"{match_data['score_lost']} {match_data['team_lost']}"
+                                f"Сохранен матч: {match_data.team_won} {match_data.score_won}:"
+                                f"{match_data.score_lost} {match_data.team_lost}"
                             )
                         except Exception as e:
                             print(f'Ошибка сохранения: {e}')
@@ -51,18 +51,6 @@ def parse_match_results():
     finally:
         driver.quit()
 
-
-def parse_extended_data():
-    """Сбор особых данных матча"""
-    selenium_driver = SeleniumDriver()
-    driver = selenium_driver.driver
-    try:
-        data_parser = DataParser()
-
-        for
-
-    except Exception as e:
-        print(f'Ошибка в парсинге: {e}')
 
 if __name__ == '__main__':
     parse_match_results()

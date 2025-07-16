@@ -7,8 +7,8 @@ class Match(models.Model):
     score_lost = models.IntegerField()
     date = models.DateField(null=True, blank=True)
     time = models.TimeField(null=True, blank=True)
-    event = models.CharField(max_length=40, null=True, blank=True)
-    match_format = models.IntegerField(null=True, blank=True)
+    # event = models.CharField(max_length=40, null=True, blank=True)
+    # match_format = models.IntegerField(null=True, blank=True)
     # hltv_id = models.IntegerField(unique=True, null=True, blank=True)
 
 class Team(models.Model):
