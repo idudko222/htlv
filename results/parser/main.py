@@ -20,7 +20,7 @@ def parse_match_results():
     driver = selenium_driver.driver
     try:
         data_parser = DataParser()
-        max_matches = 200  # Максимальное количество матчей для парсинга
+        max_matches = 15000  # Максимальное количество матчей для парсинга
         matches_per_page = 100  # Количество матчей на странице
         match_urls = []
 
