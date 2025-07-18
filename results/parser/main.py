@@ -20,7 +20,7 @@ def parse_match_results():
     driver = selenium_driver.driver
     try:
         data_parser = DataParser()
-        max_matches = 100  # Максимальное количество матчей для парсинга
+        max_matches = 200  # Максимальное количество матчей для парсинга
         matches_per_page = 100  # Количество матчей на странице
         match_urls = []
 
@@ -58,7 +58,7 @@ def parse_match_results():
 
         for url in match_urls:
             try:
-                time.sleep(1)  # Задержка между запросами
+                time.sleep(0.1)  # Задержка между запросами
                 html = data_parser.get_html(driver, url)
                 if not html:
                     continue

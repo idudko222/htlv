@@ -113,7 +113,7 @@ class MatchDetailsParser:
             match_link=match_link,
             maps=maps_data,
             players_stats=players_stats
-        ) and Team(team_id=team_id)
+        )
 
     def _parse_maps(self) -> List[MapData]:
         maps_data = []
@@ -194,11 +194,10 @@ class MatchDetailsParser:
         adr = float(row.select_one('.adr').text.strip())
         kast = float(row.select_one('.kast').text.strip().replace('%', ''))
         rating = float(row.select_one('.rating').text.strip())
-        team = self.soup.select_one('.teamName.team').text.strip()
+        team = row.find_previous('tr', class_='header-row').select_one('.teamName.team').text.strip()
 
         player_link = row.select_one('td.players a[href^="/player/"]')['href']
-        hltv_id = re.search(r'/player/(\d+)/', player_link)
-        print([nickname, country, kd, adr, kast, rating, team, player_link])
+        hltv_id = re.search(r'/player/(\d+)/', player_link).group(1)
 
         return PlayerStats(
             nickname=nickname,
