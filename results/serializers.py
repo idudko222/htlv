@@ -43,10 +43,24 @@ class MatchFullSerializer(serializers.ModelSerializer):
 
     def get_queryset_stats(self, obj):
         """Получаем QuerySet со статистикой игроков"""
-        match_maps = obj.matchmap_set.all()
-        return PlayerStats.objects.filter(
-            match__in=match_maps
-        ).select_related('player', 'team')
+        player_ids = set()
+        stats = []
+        for stat in PlayerStats.objects.filter(match__match=obj).select_related('player', 'team'):
+            if stat.player_id not in player_ids:
+                stats.append(stat)
+                player_ids.add(stat.player_id)
+        return stats
+
+    def get_players_stats_data(self, queryset):
+        """Преобразуем QuerySet в данные статистики"""
+        stats_data = PlayerStatsSerializer(queryset, many=True).data
+        return self.filter_stats_fields(stats_data)
+
+    def get_players_stats(self, obj):
+        if 'players_stats' in self.fields:
+            stats_queryset = self.get_queryset_stats(obj)
+            return self.get_players_stats_data(stats_queryset)
+        return None
 
     def filter_stats_fields(self, stats_data):
         """Фильтруем поля статистики игроков согласно exclude_stats_fields"""
@@ -61,13 +75,6 @@ class MatchFullSerializer(serializers.ModelSerializer):
                     filtered_stat[field] = value
             filtered_stats.append(filtered_stat)
         return filtered_stats
-
-    def get_players_stats(self, obj):
-        if 'players_stats' in self.fields:
-            stats = self.get_queryset_stats(obj)
-            stats_data = PlayerStatsSerializer(stats, many=True).data
-            return self.filter_stats_fields(stats_data)
-        return None
 
     class Meta:
         model = Match

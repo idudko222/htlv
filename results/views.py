@@ -77,4 +77,6 @@ class MatchStatsViewSet(BaseViewSet):
         exclude_stats_fields = self.request.query_params.get('exclude_stats_fields', '')
         context['exclude_fields'] = [f.strip() for f in exclude_fields.split(',') if f.strip()]
         context['exclude_stats_fields'] = [f.strip() for f in exclude_stats_fields.split(',') if f.strip()]
+        if 'stats' in context['exclude_stats_fields']:
+            context['exclude_stats_fields'] = 'kills,deaths,adr,kast,rating'
         return context
