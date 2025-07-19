@@ -6,7 +6,7 @@ class StrictFilterSet(filters.FilterSet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        always_allowed_params = ['page', 'page_size', 'exclude_fields']
+        always_allowed_params = ['page', 'page_size', 'exclude_fields', 'exclude_stats_fields']
 
         allowed_params = list(self.filters.keys()) + always_allowed_params
         for param in self.request.GET.keys():

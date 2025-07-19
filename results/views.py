@@ -11,6 +11,10 @@ from django.db.models import Prefetch
 
 class BaseViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
+        """
+           Переопределение стандартного метода ViewSet.
+           Добавляет проверку на пустой queryset и кастомные сообщения об ошибках.
+        """
         try:
             queryset = self.filter_queryset(self.get_queryset())
 
@@ -48,32 +52,29 @@ class MatchStatsViewSet(BaseViewSet):
     filterset_class = MatchFilter
 
     def get_queryset(self):
+        """
+           Полная замена стандартного get_queryset().
+           Оптимизирует запросы через prefetch_related и select_related.
+        """
         queryset = Match.objects.prefetch_related(
             Prefetch('matchmap_set', queryset=MatchMap.objects.select_related('map', 'winner'))
         ).order_by('-date')
-
-        if self._should_exclude_stats():
-            return queryset
 
         return queryset.prefetch_related(
             Prefetch(
                 'matchmap_set__playerstats_set',
                 queryset=PlayerStats.objects.select_related('player', 'team')
-                )
+            )
         )
 
     def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
-    def get_serializer_context(self):
+        """
+           Переопределение стандартного метода с целью добавления кастомных параметров в контекст сериализатора
+        """
         context = super().get_serializer_context()
         context['request'] = self.request
         exclude_fields = self.request.query_params.get('exclude_fields', '')
+        exclude_stats_fields = self.request.query_params.get('exclude_stats_fields', '')
         context['exclude_fields'] = [f.strip() for f in exclude_fields.split(',') if f.strip()]
+        context['exclude_stats_fields'] = [f.strip() for f in exclude_stats_fields.split(',') if f.strip()]
         return context
-
-    def _should_exclude_stats(self):
-        exclude_fields = self.request.query_params.get('exclude_fields', '')
-        return 'players_stats' in exclude_fields.split(',')

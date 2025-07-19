@@ -9,7 +9,6 @@ router.register(r'matches', views.MatchStatsViewSet, basename='match')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/matches', views.MatchStatsViewSet.as_view({'get': 'list'}), name='matches'),
     path('api/teams', views.TeamViewSet.as_view({'get': 'list'}), name='teams'),
     path('api/', include(router.urls)),
 ]
