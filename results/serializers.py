@@ -76,6 +76,22 @@ class MatchFullSerializer(serializers.ModelSerializer):
             filtered_stats.append(filtered_stat)
         return filtered_stats
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        if not request:
+            return data
+
+        team_names_param = request.query_params.get('team_names', '')
+        if not team_names_param:
+            return data
+
+        team_names = [name.strip() for name in team_names_param.split(',') if name.strip()]
+
+        if (data['team_won'] not in team_names) and (data['team_lost'] not in team_names):
+            return None
+        return data
+
     class Meta:
         model = Match
         fields = ['hltv_id', 'team_won', 'team_lost', 'date',

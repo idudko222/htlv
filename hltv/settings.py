@@ -73,10 +73,21 @@ WSGI_APPLICATION = 'hltv.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'hltv',
+        'USER': 'postgres',       # Пользователь
+        'PASSWORD': 'ignat1811',  # Пароль
+        'HOST': '127.0.0.1',      # Если Postgres на другом сервере — укажите IP
+        'PORT': '5432',           # Порт (по умолчанию 5432)
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 
 # Password validation
