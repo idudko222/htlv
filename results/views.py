@@ -1,9 +1,9 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
-from results.models import Match, Team, PlayerStats, MatchMap
-from results.serializers import TeamSerializer, MatchFullSerializer
-from results.filters import MatchFilter
+from results.models import Match, Team, PlayerStats, MatchMap, Player
+from results.serializers import TeamSerializer, MatchFullSerializer, PlayerStatsSerializer
+from results.filters import MatchFilter, PlayerFilter
 from rest_framework import permissions
 from rest_framework import status, viewsets
 from django.db.models import Prefetch
@@ -16,35 +16,37 @@ from io import StringIO
 
 
 class BaseViewSet(viewsets.ModelViewSet):
+    def handle_exceptions(self, exc):
+        if isinstance(exc, NotFound):
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        return super().handle_exceptions(exc)
+
     def list(self, request, *args, **kwargs):
         """
            Переопределение стандартного метода ViewSet.
            Добавляет проверку на пустой queryset и кастомные сообщения об ошибках.
         """
-        try:
-            queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(self.get_queryset())
 
-            if not queryset.exists():
-                return Response(
-                    {"detail": "No matches found with these filters"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-
-            page = self.paginate_queryset(queryset)
-            if page is not None:
-                serializer = self.get_serializer(page, many=True)
-                filtered_data = [item for item in serializer.data if item is not None]
-                return self.get_paginated_response(filtered_data)
-
-            serializer = self.get_serializer(queryset, many=True)
-            filtered_data = [item for item in serializer.data if item is not None]
-            return Response(filtered_data)
-
-        except NotFound as e:
+        if not queryset.exists():
             return Response(
-                {"detail": str(e)},
+                {"detail": "No matches found with these filters"},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            filtered_data = [item for item in serializer.data if item is not None]
+            return self.get_paginated_response(filtered_data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        filtered_data = [item for item in serializer.data if item is not None]
+        return Response(filtered_data)
+
 
 
 class TeamViewSet(viewsets.ModelViewSet):
@@ -173,3 +175,10 @@ class MatchStatsViewSet(BaseViewSet):
         )
         response['Content-Disposition'] = 'attachment; filename="matches_single_row.csv"'
         return response
+
+class PlayerStatViewSet(viewsets.ModelViewSet):
+    queryset = Player.objects.all()
+    serializer_class = PlayerStatsSerializer
+    permission_classes = [permissions.AllowAny]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = PlayerFilter

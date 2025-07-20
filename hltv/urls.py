@@ -11,4 +11,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/teams', views.TeamViewSet.as_view({'get': 'list'}), name='teams'),
     path('api/', include(router.urls)),
+    path('api/players', views.PlayerStatViewSet.as_view({'get': 'list'}), name='players'),
 ]

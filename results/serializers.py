@@ -2,13 +2,26 @@ from results.models import Match, Team, Player, PlayerStats, Map, MatchMap
 from rest_framework import serializers
 
 
-class TeamSerializer(serializers.ModelSerializer):
+class DynamicFieldsModelSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор с динамическим выбором полей
+    """
+    def __init__(self, *args, **kwargs):
+        exclude_fields = kwargs.get('context', {}).get('exclude_fields', [])
+        super().__init__(*args, **kwargs)
+
+        if exclude_fields:
+            for field in exclude_fields:
+                self.fields.pop(field, None)
+
+
+class TeamSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = Team
         fields = '__all__'
 
 
-class PlayerStatsSerializer(serializers.ModelSerializer):
+class PlayerStatsSerializer(DynamicFieldsModelSerializer):
     player = serializers.CharField(source='player.nickname')
     team = serializers.CharField(source='team.name')
 
@@ -17,7 +30,7 @@ class PlayerStatsSerializer(serializers.ModelSerializer):
         fields = ['player', 'team', 'kills', 'deaths', 'adr', 'kast', 'rating']
 
 
-class MatchMapSerializer(serializers.ModelSerializer):
+class MatchMapSerializer(DynamicFieldsModelSerializer):
     map = serializers.CharField(source='map.name')
     winner = serializers.CharField(source='winner.name')
 
@@ -26,20 +39,15 @@ class MatchMapSerializer(serializers.ModelSerializer):
         fields = ['map', 'score_team1', 'score_team2', 'winner']
 
 
-class MatchFullSerializer(serializers.ModelSerializer):
+class MatchFullSerializer(DynamicFieldsModelSerializer):
     maps = MatchMapSerializer(many=True, source='matchmap_set')
     players_stats = serializers.SerializerMethodField()
     team_won = serializers.CharField()
     team_lost = serializers.CharField()
 
     def __init__(self, *args, **kwargs):
-        exclude_fields = kwargs.get('context', {}).get('exclude_fields', [])
         self.exclude_stats_fields = kwargs.get('context', {}).get('exclude_stats_fields', [])
         super().__init__(*args, **kwargs)
-
-        for field_name in exclude_fields:
-            if field_name in self.fields:
-                self.fields.pop(field_name)
 
     def get_queryset_stats(self, obj):
         """Получаем QuerySet со статистикой игроков"""
