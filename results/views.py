@@ -91,50 +91,77 @@ class MatchStatsViewSet(BaseViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def export_csv(self, request):
-        """Потоковая выгрузка матчей в CSV с сохранением структуры JSON"""
+        """Потоковая выгрузка матчей в новом формате CSV"""
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
         data = serializer.data
 
         def generate_rows():
-            # Буфер для построчной записи
             buffer = StringIO()
             writer = csv.writer(buffer)
 
-            # Заголовки CSV (основные поля + поля для maps и players_stats)
             headers = [
-                'hltv_id', 'team_won', 'team_lost', 'date', 'time', 'event', 'match_format',
-                'maps_count', 'maps_json',  # Для вложенных карт
-                'players_count', 'players_stats_json'  # Для статистики игроков
+                'team1', 'team1_roster', 'team2', 'team2_roster',
+                'bo', 'match_score',
+                'map1', 'map1_score', 'map2', 'map2_score',
+                'map3', 'map3_score', 'map4', 'map4_score',
+                'map5', 'map5_score', 'winner', 'hltv_id'
             ]
             writer.writerow(headers)
             yield buffer.getvalue()
             buffer.seek(0)
             buffer.truncate(0)
 
-            # Данные
             for match in data:
-                # Основные поля
-                row = [
-                    match['hltv_id'],
-                    match['team_won'],
-                    match['team_lost'],
-                    match['date'],
-                    match.get('time', ''),
-                    match.get('event', ''),
-                    match.get('match_format', ''),
-                ]
+                team1 = match['team_won']
+                team2 = match['team_lost']
+                bo = match.get('match_format', '')
+                winner = match['team_won']
+                hltv_id = match['hltv_id']
 
-                # Обработка maps
+                # Получаем составы команд
+                team_rosters = {}
+                for player in match.get('players_stats', []):
+                    team_name = player['team']
+                    if team_name not in team_rosters:
+                        team_rosters[team_name] = []
+                    team_rosters[team_name].append(player['player'])
+
+                # Обрабатываем карты
                 maps_data = match.get('maps', [])
-                row.append(len(maps_data))  # Количество карт
-                row.append(json.dumps(maps_data, ensure_ascii=False))  # JSON строкой
+                map_fields = []
+                team1_wins = 0
+                team2_wins = 0
 
-                # Обработка players_stats
-                players_data = match.get('players_stats', [])
-                row.append(len(players_data))  # Количество игроков
-                row.append(json.dumps(players_data, ensure_ascii=False))  # JSON строкой
+                for i in range(5):
+                    if i < len(maps_data):
+                        map_data = maps_data[i]
+                        # Определяем победителя на карте по winner.name (или winner.id, если он есть в сериализованных данных)
+                        if 'winner' in map_data and map_data['winner'] == team1:
+                            team1_wins += 1
+                            score = f"{map_data['score_team1']}-{map_data['score_team2']}"
+                        else:
+                            team2_wins += 1
+                            score = f"{map_data['score_team2']}-{map_data['score_team1']}"
+                        map_fields.extend([map_data['map'], score])
+                    else:
+                        map_fields.extend(['', ''])
 
+                # Формируем счет матча
+                match_score = f"{team1_wins}-{team2_wins}"
+
+                # Создаем строку для CSV
+                row = [
+                    team1,
+                    ', '.join(team_rosters.get(team1, [])),
+                    team2,
+                    ', '.join(team_rosters.get(team2, [])),
+                    bo,
+                    match_score,
+                    *map_fields,
+                    winner,
+                    hltv_id
+                ]
                 writer.writerow(row)
                 yield buffer.getvalue()
                 buffer.seek(0)
@@ -144,5 +171,5 @@ class MatchStatsViewSet(BaseViewSet):
             generate_rows(),
             content_type='text/csv; charset=utf-8'
         )
-        response['Content-Disposition'] = 'attachment; filename="matches_structured.csv"'
+        response['Content-Disposition'] = 'attachment; filename="matches_single_row.csv"'
         return response

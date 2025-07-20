@@ -77,6 +77,9 @@ class MatchFullSerializer(serializers.ModelSerializer):
         return filtered_stats
 
     def to_representation(self, instance):
+        """
+        Метод сериализатора, который проводит фильтрацию по командам входящим в контекст запроса
+        """
         data = super().to_representation(instance)
         request = self.context.get('request')
         if not request:
