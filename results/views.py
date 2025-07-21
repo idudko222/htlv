@@ -1,21 +1,22 @@
+from datetime import timedelta, datetime
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 from results.models import Match, Team, PlayerStats, MatchMap, Player
-from results.serializers import TeamSerializer, MatchFullSerializer, PlayerStatsSerializer
-from results.filters import MatchFilter, PlayerFilter
+from results.serializers import TeamSerializer, MatchFullSerializer, PlayerStatsSimpleSerializer
+from results.filters import MatchFilter, PlayerStatsFilter
 from rest_framework import permissions
 from rest_framework import status, viewsets
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Avg
 from rest_framework.decorators import action
 from django.http import StreamingHttpResponse
 from rest_framework.permissions import AllowAny
 import csv
-import json
 from io import StringIO
 
 
-class BaseViewSet(viewsets.ModelViewSet):
+class BaseViewSet(viewsets.ReadOnlyModelViewSet ):
     def handle_exceptions(self, exc):
         if isinstance(exc, NotFound):
             return Response(
@@ -48,8 +49,7 @@ class BaseViewSet(viewsets.ModelViewSet):
         return Response(filtered_data)
 
 
-
-class TeamViewSet(viewsets.ModelViewSet):
+class TeamViewSet(BaseViewSet):
     queryset = Team.objects.all().order_by('id')
     serializer_class = TeamSerializer
     permission_classes = [permissions.AllowAny]
@@ -176,9 +176,10 @@ class MatchStatsViewSet(BaseViewSet):
         response['Content-Disposition'] = 'attachment; filename="matches_single_row.csv"'
         return response
 
-class PlayerStatViewSet(viewsets.ModelViewSet):
-    queryset = Player.objects.all()
-    serializer_class = PlayerStatsSerializer
-    permission_classes = [permissions.AllowAny]
+
+class PlayerStatsViewSet(BaseViewSet):
+    queryset = PlayerStats.objects.select_related('player', 'team')
+    serializer_class = PlayerStatsSimpleSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_class = PlayerFilter
+    filterset_class = PlayerStatsFilter
+    pagination_class = PageNumberPagination

@@ -1,11 +1,15 @@
 from results.models import Match, Team, Player, PlayerStats, Map, MatchMap
 from rest_framework import serializers
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Avg
 
 
 class DynamicFieldsModelSerializer(serializers.ModelSerializer):
     """
     Сериализатор с динамическим выбором полей
     """
+
     def __init__(self, *args, **kwargs):
         exclude_fields = kwargs.get('context', {}).get('exclude_fields', [])
         super().__init__(*args, **kwargs)
@@ -107,3 +111,18 @@ class MatchFullSerializer(DynamicFieldsModelSerializer):
         model = Match
         fields = ['hltv_id', 'team_won', 'team_lost', 'date',
                   'time', 'event', 'match_format', 'maps', 'players_stats']
+
+
+class PlayerSerializer(DynamicFieldsModelSerializer):
+    class Meta:
+        model = Player
+        fields = ['id', 'nickname']
+
+
+class PlayerStatsSimpleSerializer(DynamicFieldsModelSerializer):
+    nickname = serializers.CharField(source='player.nickname')
+    country = serializers.CharField(source='player.country')
+
+    class Meta:
+        model = PlayerStats
+        fields = ['player','country' , 'nickname', 'team', 'rating']

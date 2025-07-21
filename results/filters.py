@@ -1,7 +1,6 @@
 from django_filters import rest_framework as filters
-from results.models import Match, Team, Player
+from results.models import Match, Team, PlayerStats
 from .base_filter import StrictFilterSet
-from django.db.models import Q
 
 
 class MatchFilter(StrictFilterSet):
@@ -28,10 +27,18 @@ class TeamFilter(StrictFilterSet):
         }
 
 
-class PlayerFilter(StrictFilterSet):
+class PlayerStatsFilter(StrictFilterSet):
+    nickname = filters.CharFilter(field_name='player__nickname', lookup_expr='icontains')
+    country = filters.CharFilter(field_name='player__country', lookup_expr='iexact')
+    team = filters.CharFilter(field_name='team__name', lookup_expr='iexact')
+    months = filters.NumberFilter(method='filter_by_months')
+
     class Meta:
-        model = Player
-        fields = {
-            'nickname': ['exact'],
-            'country': ['exact'],
-        }
+        model = PlayerStats
+        fields = ['nickname', 'country', 'team', 'rating']
+
+    def filter_by_months(self, queryset, name, value):
+        from django.utils import timezone
+        from datetime import timedelta
+        period_ago = timezone.now() - timedelta(days=30*int(value))
+        return queryset.filter(match__match__date__gte=period_ago)
