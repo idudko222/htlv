@@ -8,7 +8,7 @@ from results.serializers import TeamSerializer, MatchFullSerializer, PlayerStats
 from results.filters import MatchFilter, PlayerStatsFilter
 from rest_framework import permissions
 from rest_framework import status, viewsets
-from django.db.models import Prefetch, Avg
+from django.db.models import Prefetch, Avg, Count
 from rest_framework.decorators import action
 from django.http import StreamingHttpResponse
 from rest_framework.permissions import AllowAny
@@ -183,3 +183,58 @@ class PlayerStatsViewSet(BaseViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = PlayerStatsFilter
     pagination_class = PageNumberPagination
+
+    def get_queryset(self):
+        months = int(self.request.query_params.get('months', 1))
+        last_month = datetime.now() - timedelta(days=30 * months)
+
+        # Создаем базовый QuerySet с агрегацией
+        queryset = (
+            PlayerStats.objects
+            .filter(match__match__date__gte=last_month)
+            .select_related('player', 'team')
+            .values('player_id', 'team_id')
+            .annotate(
+                avg_rating=Avg('rating'),
+                avg_kills=Avg('kills'),
+                avg_deaths=Avg('deaths'),
+                avg_adr=Avg('adr'),
+                avg_kast=Avg('kast'),
+                matches_played=Count('match__match_id', distinct=True)
+            )
+        )
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        # Получаем отфильтрованный и агрегированный QuerySet
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Получаем связанные объекты Player и Team
+        player_stats = PlayerStats.objects.filter(
+            player_id__in=[stat['player_id'] for stat in queryset]
+        ).select_related('player', 'team')
+
+        # Собираем результаты
+        results = []
+        for stat in queryset:
+            ps = next(ps for ps in player_stats if ps.player_id == stat['player_id'])
+            results.append({
+                'player': ps.player,
+                'team': ps.team,
+                'avg_rating': round(stat['avg_rating'], 2),
+                'avg_kills': round(stat['avg_kills'], 2),
+                'avg_deaths': round(stat['avg_deaths'], 2),
+                'avg_adr': round(stat['avg_adr'], 2),
+                'avg_kast': round(stat['avg_kast'], 2),
+                'matches_played': stat['matches_played']
+            })
+
+        # Применяем пагинацию к результатам
+        page = self.paginate_queryset(results)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(results, many=True)
+        return Response(serializer.data)

@@ -122,7 +122,16 @@ class PlayerSerializer(DynamicFieldsModelSerializer):
 class PlayerStatsSimpleSerializer(DynamicFieldsModelSerializer):
     nickname = serializers.CharField(source='player.nickname')
     country = serializers.CharField(source='player.country')
+    team = serializers.CharField(source='team.name')
+    rating = serializers.FloatField(source='avg_rating')
+    kills = serializers.FloatField(source='avg_kills')
+    deaths = serializers.FloatField(source='avg_deaths')
+    adr = serializers.FloatField(source='avg_adr')
+    kast = serializers.FloatField(source='avg_kast')
+    matches_played = serializers.IntegerField()
 
     class Meta:
         model = PlayerStats
-        fields = ['player','country' , 'nickname', 'team', 'rating']
+        fields = [ 'nickname', 'country', 'team',
+            'rating', 'kills', 'deaths', 'adr', 'kast',
+            'matches_played']
