@@ -1,0 +1,5 @@
+.venv
+hltv/private_settings.py
+data2.json
+db.sqlite3
+main.py
