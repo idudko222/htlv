@@ -1,5 +1,6 @@
 from pathlib import Path
-
+from hltv.private_settings import Database as db
+from hltv.private_settings import SecretKey
 from django.contrib.admin.templatetags.admin_list import results
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -10,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-8h!w&xf5e=(52(-h2nojc%i3rzt@w#5s)1(3@rq)1s6(k+!6y!'
+SECRET_KEY = SecretKey.key
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -78,11 +79,11 @@ WSGI_APPLICATION = 'hltv.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'hltv',
-        'USER': 'postgres',       # Пользователь
-        'PASSWORD': 'ignat1811',  # Пароль
-        'HOST': '127.0.0.1',      # Если Postgres на другом сервере — укажите IP
-        'PORT': '5432',           # Порт (по умолчанию 5432)
+        'NAME': db.name,
+        'USER': db.user,       # Пользователь
+        'PASSWORD': db.password,  # Пароль
+        'HOST': db.host,      # Если Postgres на другом сервере
+        'PORT': db.port,           # Порт (по умолчанию 5432)
     }
 }
 
